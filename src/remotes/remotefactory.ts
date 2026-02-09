@@ -6,6 +6,7 @@ import {ZesaruxRemote} from './zesarux/zesaruxremote';
 import {ZxNextSerialRemote} from './dzrptransport/zxnextserialremote';
 import {ZxNextSocketRemote} from './dzrptransport/zxnextsocketremote';
 import {MameGdbRemote} from './mame/mamegdbremote';
+import {AmaliaGdbRemote} from './amalia/amaliagdbremote';
 import {SettingsParameters} from '../settings/settings';
 import {DzrpGenericSocketRemote, DzrpGenericSerialRemote} from './dzrptransport/dzrpgenericremote';
 
@@ -47,6 +48,9 @@ export class RemoteFactory {
 					remote = new DzrpGenericSocketRemote(launch.dzrp);
 				else
 					remote = new DzrpGenericSerialRemote(launch.dzrp);
+				break;
+			case 'amalia':
+				remote = new AmaliaGdbRemote(launch.mame);
 				break;
 			default:
 				Utility.assert(false);
