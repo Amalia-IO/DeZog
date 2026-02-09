@@ -5,6 +5,7 @@ import {Utility} from '../misc/utility';
 import {ZesaruxRemote} from './zesarux/zesaruxremote';
 import {ZxNextSerialRemote} from './dzrpbuffer/zxnextserialremote';
 import {MameGdbRemote} from './mame/mamegdbremote';
+import {AmaliaGdbRemote} from './amalia/amaliagdbremote';
 import {Settings} from '../settings/settings';
 
 
@@ -33,6 +34,9 @@ export class RemoteFactory {
 				break;
 			case 'mame':
 				RemoteFactory.setGlobalRemote(new MameGdbRemote());
+				break;
+			case 'amalia':
+				RemoteFactory.setGlobalRemote(new AmaliaGdbRemote());
 				break;
 			default:
 				Utility.assert(false);
