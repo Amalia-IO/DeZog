@@ -167,6 +167,12 @@ export class MameGdbRemote extends DzrpQueuedRemote {
 		// NOTE: Remove once MAME issue 9578 (https://github.com/mamedev/mame/issues/9578) 	is clarified:
 		this.cmdRespTimeoutTime = 0;	// No response expected for kill command.
 
+		// Cancel any in-flight timeouts and clear the queue. We want the 'k' command to be sent
+		// immediately. Otherwise there is a delay of 5 seconds before the 'k' command is actually
+		// sent, causing the debug UI bar to remain visible until the command is sent.
+		this.stopCmdRespTimeout();
+		this.messageQueue.length = 0;
+
 		try {
 			await this.sendPacketData('k');	// REMOVE with kill command
 		}

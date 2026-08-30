@@ -234,5 +234,41 @@ suite('MameRemote', () => {
 		assert.ok(await mockMame.checkTmpBreakpoints(pc, 0xFFFF, 0xEC12));
 	});
 
+	test('disconnect clears queued packets before kill command', async () => {
+		class MockMame extends MameGdbRemote {
+			public sentPackets: string[] = [];
+
+			protected async sendBuffer(buffer: Buffer): Promise<void> {
+				this.sentPackets.push(buffer.toString());
+			}
+		}
+
+		Settings.launch = Settings.Init({remoteType: 'mame'} as any);
+		const mockMame = new MockMame() as any;
+		mockMame.socket = {
+			removeAllListeners() {
+				//
+			},
+			end(callback: () => void) {
+				callback();
+			}
+		};
+		mockMame.messageQueue.push({
+			buffer: Buffer.from('old-packet'),
+			respTimeoutTime: 5000,
+			resolve: () => undefined,
+			reject: () => undefined,
+		});
+		mockMame.cmdRespTimeoutHandle = setTimeout(() => undefined, 1000);
+		mockMame.cmdRespTimeoutTime = 5000;
+
+		await mockMame.disconnect();
+
+		assert.equal(mockMame.cmdRespTimeoutHandle, undefined);
+		assert.equal(mockMame.messageQueue.length, 0);
+		assert.equal(mockMame.sentPackets.length, 1);
+		assert.equal(mockMame.sentPackets[0], '$k#6B');
+	});
+
 });
 

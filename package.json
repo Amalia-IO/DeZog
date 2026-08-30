@@ -1,7 +1,7 @@
 {
 	"name": "dezog",
 	"displayName": "DeZog",
-	"version": "3.7.1",
+	"version": "3.7.4",
 	"publisher": "maziac",
 	"description": "Visual Studio Code Debugger for the Z80 and ZX Spectrum/ZX81.",
 	"author": {
@@ -38,7 +38,7 @@
 	"scripts": {
 		"compile": "tsc -p ./",
 		"watch-tsc": "tsc -w -p ./",
-		"test": "mocha -u tdd \"out/**/*.test{s,}.js\" --exit",
+		"test": "mocha -u tdd \"out/**/*.test{s,}.js\"",
 		"vscode:prepublish": "npm run esbuild-node -- --minify && npm run esbuild-browser -- --minify",
 		"esbuild-node": "esbuild ./src/extension.ts --bundle --outdir=out --external:vscode --external:@serialport --external:jsonc-parser --external:node-graphviz --external:ms --format=cjs --platform=node",
 		"esbuild-browser": "esbuild ./src/remotes/zsimulator/zsimwebview/main.ts --bundle --outdir=out --outbase=src --platform=browser",
@@ -46,7 +46,8 @@
 		"watch-browser": "npm run esbuild-browser -- --sourcemap --watch",
 		"package": "vsce package",
 		"package:small": "file=$npm_package_name-$npm_package_version.vsix ; vsce package --ignoreFile .vscodeignore_small --out $file ; zip $file.zip $file",
-		"check-env": "node -e 'console.log(process.env)' | grep npm"
+		"check-env": "node -e 'console.log(process.env)' | grep npm",
+		"npm audit --omit=dev": "env -u npm_config_allow_scripts -u NPM_CONFIG_ALLOW_SCRIPTS npm audit --omit=dev"
 	},
 	"dependencies": {
 		"@vscode/debugadapter": "^1.68.0",
@@ -169,6 +170,15 @@
 			}
 		],
 		"breakpoints": [
+			{
+				"language": "plaintext"
+			},
+			{
+				"language": "asm-z80-sjasmplus"
+			},
+			{
+				"language": "asm-z80-sjasmplus-list"
+			},
 			{
 				"language": "asm-collection"
 			},
@@ -331,17 +341,17 @@
 			],
 			"editor/context": [
 				{
-					"when": "inDebugMode && resourceLangId == asm-collection || inDebugMode && resourceLangId == asm-list-file",
+					"when": "inDebugMode && (resourceLangId == plaintext || resourceLangId == asm-z80-sjasmplus || resourceLangId == asm-z80-sjasmplus-list || resourceLangId == z80-macroasm || resourceLangId == z80-asm || resourceLangId == zeus-asm || resourceLangId == gbz80 || resourceLangId == pasmo || resourceLangId == asm-collection || resourceLangId == asm-list-file)",
 					"command": "dezog.movePCtoCursor",
 					"group": "debug"
 				},
 				{
-					"when": "inDebugMode && resourceLangId == asm-collection || inDebugMode && resourceLangId == asm-list-file",
+					"when": "inDebugMode && (resourceLangId == plaintext || resourceLangId == asm-z80-sjasmplus || resourceLangId == asm-z80-sjasmplus-list || resourceLangId == z80-macroasm || resourceLangId == z80-asm || resourceLangId == zeus-asm || resourceLangId == gbz80 || resourceLangId == pasmo || resourceLangId == asm-collection || resourceLangId == asm-list-file)",
 					"submenu": "dezog.disassemblyAtCursor",
 					"group": "debug"
 				},
 				{
-					"when": "inDebugMode && resourceLangId == asm-collection || inDebugMode && resourceLangId == asm-list-file",
+					"when": "inDebugMode && (resourceLangId == plaintext || resourceLangId == asm-z80-sjasmplus || resourceLangId == asm-z80-sjasmplus-list || resourceLangId == z80-macroasm || resourceLangId == z80-asm || resourceLangId == zeus-asm || resourceLangId == gbz80 || resourceLangId == pasmo || resourceLangId == asm-collection || resourceLangId == asm-list-file)",
 					"submenu": "dezog.analyzeAtCursor",
 					"group": "debug"
 				}

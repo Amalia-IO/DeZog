@@ -482,8 +482,6 @@ zcc +zxn -subtype=nex -vn --list -m --c-code-in-asm -clib=sdcc_iy -Cz"--clean" -
 ]
 ~~~
 
-Please note: C-support is only working with sdcc, not with sccz80.
-
 Top of stack:
 In launch.json you can set the `topOfStack` to the z88dk label `__register_sp` to set the stack for evaluation in DeZog.
 ~~~json
@@ -497,14 +495,16 @@ For 'watching' C-variables you need to prefix the variable with a "_".
 E.g. for `my_global_var` in C you would need to enter `_my_global_var` in the WATCH window.
 If the size of the variable is not recognized correctly you can append it after the variable name, e.g. `_my_global_var,2` for a word-sized variable.
 Arrays can be viewed by appending the number of elements.
-`my_global_var,2,10` for example would show 10 elements, each word-sized.
+`_my_global_var,2,10` for example would show 10 elements, each word-sized.
 
 Notes:
 - C-support only works for "z88dkv2" not for "z88dk"
+- C-support is only working with sdcc, not with sccz80.
 - For the "path" you can use globbing
 - Top of stack: In launch.json you can set the `topOfStack` to the z88dk label `__register_sp` to set the stack for evaluation in DeZog.
 - Although z88dk can create object code for banked memory, the .map and .lis files lack this information. As a consequence, DeZog can not use any banking with z88dk. You will be able to debug such programs, but it may happen that DeZog cannot correctly associate files with program addresses because e.g. the 0xC000 might be used by several banks. This results in wrong display of files when stepping or breakpoints that cannot be set.
 - Not all C-code may have corresponding addresses in assembler code. I.e. for those lines you cannot set breakpoints. Try to set the breakpoint at some other line in the vicinity.
+- z88dk generated C-source code line references are not very accurate or even wrong in some cases. This may result in inaccurate stepping. Please see [#167-comment](https://github.com/maziac/DeZog/issues/167#issuecomment-4586450764) for more details.
 
 **Reverse Engineering configuration**
 
@@ -641,7 +641,7 @@ The following table gives an overview.
 | ASSERTION support                     | yes    | yes     | yes 6)  | yes 6) | yes 6) |
 | WPMEM (Watchpoints) support           | yes    | yes 2)  | no      | no     | yes    |
 | LOGPOINT support                      | yes    | no      | yes 6)  | yes 6) | yes 6) |
-| Long addresses/breakpoints            | yes    | yes     | yes     | yes    | yes    |
+| Banking support                       | yes    | yes     | yes     | yes    | no     |
 | Extended callstack                    | no     | yes     | no      | no     | no     |
 | Code coverage                         | yes    | yes 1)  | no      | no     | no     |
 | Reverse debugging                     | true   | true    | lite    | lite   | lite   |
@@ -1466,7 +1466,7 @@ Furthermore the debugger program requires 8 bytes on the debugged program's stac
 
 So take care to use a stack that can hold these additional bytes at any time.
 
-B) Memory Paging
+B1) Memory Paging.
 The ZX Next SW Breakpoints do not work very well with memory paging.
 If you place a breakpoint in your source file the address for the source file line is taken and a breakpoint is put at that address.
 If at this moment a bank is paged in that does not correspondent to the source file a breakpoint is placed in the wrong bank.
@@ -1481,6 +1481,8 @@ Therefore you need to place the breakpoints carefully if you are placing them in
 Furthermore you should note that all breakpoints are put in just before a debugger step or continue and removed afterwards.
 I.e. if you have a "stale" breakpoint in some file it could make problems if this location changes the used bank.
 
+B2) Memory Paging.
+The SW breakpoints are implemented through `RST 0`. DeZog uses a changed ROM code to handle the "RST 0/SW breakpoints". This means: you have to take care not to change the slot 0, keeping the ROM in slot 0. Or, at least, make sure that whenever a breakpoint is hit, the ROM is paged to slot 0. (In other words: you can page in something else, run your code, but at the end you need to switch back ROM to slot 0 before the next breakpoint is hit.)
 
 C) As SW breakpoints replace the code at the breakpoint address you cannot place any SW breakpoint inside ROM code.
 
