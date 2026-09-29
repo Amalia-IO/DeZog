@@ -1406,6 +1406,7 @@ export class DebugSessionClass extends DebugSession {
 		this.processingSteppingRequest = true;
 		// Reset pause request
 		this.pauseRequested = false;
+		Remote.deferCallStack = false;
 		// Clear decorations
 		Decoration.clearBreak();
 		// Do the same for the Remote
@@ -1659,6 +1660,8 @@ export class DebugSessionClass extends DebugSession {
 			let i = 0;
 			let breakReason;
 			const timeWait = new TimeWait(500, 200, 100);
+			// Perf: a C line can be many instructions, only the call stack after the last one is needed.
+			Remote.deferCallStack = !stepBackMode;
 			while (true) {
 				i++;
 
@@ -1708,6 +1711,8 @@ export class DebugSessionClass extends DebugSession {
 				if (nextFileLoc.fileName !== prevFileLoc.fileName)
 					break;
 			}
+			Remote.deferCallStack = false;
+			await Remote.flushDeferredCallStack();
 
 			// Check for output.
 			if (breakReason) {
