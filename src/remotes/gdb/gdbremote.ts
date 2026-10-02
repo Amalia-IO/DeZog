@@ -321,7 +321,6 @@ export class GdbRemote extends DzrpQueuedRemote {
 		if (packetData?.startsWith('T')) {
 			// Yes, a Stop Reply Packet which is treated as a notification.
 			// E.g. 'T050a:0000;0b:0100;'
-
 			// Call resolve of 'continue'
 			if (this.funcContinueResolve) {
 				const continueHandler = this.funcContinueResolve;
@@ -384,7 +383,7 @@ export class GdbRemote extends DzrpQueuedRemote {
 
 		// Get break reason
 		let k = packetData.indexOf(':');
-		const param = packetData.substring(3, k);	// Skip break signal (is always '5')
+		const param = packetData.substring(3, k);	// Skip the two-character break signal.
 		let addr64k;
 		let breakReason;
 		if (param.endsWith('watch')) {
@@ -448,6 +447,8 @@ export class GdbRemote extends DzrpQueuedRemote {
 				const entry = this.putIntoQueue(buffer, this.cmdRespTimeoutTime, resolve, reject);
 				entry.customData = {
 					packet,	// Note: packet is used only for debugging.
+					// Keep the command available for response matching.
+					packetData,
 					noReply: (packetData == 'c')
 				};
 
@@ -609,7 +610,6 @@ export class GdbRemote extends DzrpQueuedRemote {
 		// All other registers are not supported
 		this.emit('warning', this.logName + ": Changing register " + Z80_REG[regIndex] + " is not supported.");
 	}
-
 
 	/** Executes the continue ('run') operation.
 	 * Sets temporary GDB breakpoints, sends the continue packet, and intercepts
@@ -909,14 +909,21 @@ export class GdbRemote extends DzrpQueuedRemote {
 	 * @returns A promise with an Uint8Array.
 	 */
 	protected async readMemWithM(addr64k: number, size: number): Promise<Uint8Array> {
-		const cmd = 'm' + addr64k.toString(16) + ',' + size.toString(16);
-		const resp = await this.sendPacketData(cmd);
-		// Parse the hex values
 		const buffer = new Uint8Array(size);
-		for (let i = 0; i < size; i++) {
-			const k = 2 * i;
-			const valString = resp.substring(k, k + 2);
-			buffer[i] = parseInt(valString, 16);
+		let offset = 0;
+		while (offset < size) {
+			const remaining = size - offset;
+			const address = (addr64k + offset) & 0xFFFF;
+			const cmd = 'm' + address.toString(16) + ',' + remaining.toString(16);
+			const resp = await this.sendPacketData(cmd);
+			const bytesRead = Math.min(Math.floor(resp.length / 2), remaining);
+			if (bytesRead === 0)
+				throw Error('No memory data received for "' + cmd + '".');
+			for (let i = 0; i < bytesRead; i++) {
+				const valString = resp.substring(2 * i, 2 * i + 2);
+				buffer[offset + i] = parseInt(valString, 16);
+			}
+			offset += bytesRead;
 		}
 		return buffer;
 	}

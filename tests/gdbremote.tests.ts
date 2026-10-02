@@ -134,6 +134,10 @@ suite('GdbRemote', () => {
 				gdb.parseXml('<target version="1.0"></target>');
 			}, Error("No architecture found in reply of the remote."));
 		});
+		test('signal-02 stop replies are accepted', () => {
+			const result = gdb.parseStopReplyPacket('T020b:3412;thread:01;');
+			assert.equal(result.pc64k, 0x1234);
+		});
 
 		test('breakpoints use Z0/z0', async () => {
 			const bp: any = {longAddress: 0x18000};	// Bank 1, address 0x8000
@@ -157,11 +161,26 @@ suite('GdbRemote', () => {
 		});
 
 		test('memory blocks are read with m packets', async () => {
+			gdb.sendPacketData = async (packetData: string) => {
+				sent.push(packetData);
+				return packetData === 'm8000,1' ? '00' : '0000';
+			};
 			await gdb.sendDzrpCmdReadMemBlocks([
 				{addr64k: 0x8000, size: 1},
 				{addr64k: 0x9000, size: 2}
 			]);
 			assert.deepEqual(sent, ['m8000,1', 'm9000,2']);
+		});
+
+		test('short memory replies are continued from the next address', async () => {
+			const replies = ['0102', '0304'];
+			gdb.sendPacketData = async (packetData: string) => {
+				sent.push(packetData);
+				return replies.shift()!;
+			};
+			const data = await gdb.readMemWithM(0x8000, 4);
+			assert.deepEqual(Array.from(data), [1, 2, 3, 4]);
+			assert.deepEqual(sent, ['m8000,4', 'm8002,2']);
 		});
 
 		test('loads a 48K SNA with flat M writes and standard registers', async () => {
