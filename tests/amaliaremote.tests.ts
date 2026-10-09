@@ -158,15 +158,12 @@ suite('AmaliaRemote', () => {
 			assertContents(blocks, result);
 		});
 
-		test('a merged read is limited in size', async () => {
-			// Gaps are small enough to merge but the total would exceed MAX_READ_BLOCK
+		test('nearby blocks use the shared GDB batching beyond 0x400 bytes', async () => {
 			const blocks: MemBlock[] = [];
 			for (let addr = 0x8000; addr < 0x8000 + 0x600; addr += 0x80)
 				blocks.push({addr64k: addr, size: 3});
 			const result = await amalia.sendDzrpCmdReadMemBlocks(blocks);
-			assert.ok(reads.length > 1, 'expected more than one read');
-			for (const read of reads)
-				assert.ok(read.size <= 0x400, 'read too big: ' + read.size);
+			assert.deepEqual(reads, [{addr64k: 0x8000, size: 0x583}]);
 			assertContents(blocks, result);
 		});
 
